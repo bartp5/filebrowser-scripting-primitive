@@ -18,9 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 #include "filebrowser.h"
 
+#include "onyx/ui/toolbar.h"
 #include "onyx/screen/screen_proxy.h"
 #include "onyx/ui/buttons.h"
 
@@ -64,18 +64,26 @@ FileBrowser::FileBrowser(QWidget *parent)
                    ui::BATTERY | ui::SCREEN_REFRESH |
                    ui::CLOCK)
 {
-    setModal(true);
+    setModal(true);    
     setWindowFlags( Qt::CustomizeWindowHint );
     treeView.setFocusPolicy(Qt::TabFocus);
 
     setAutoFillBackground(true);
     setBackgroundRole(QPalette::Dark);
 
+    ui::OnyxToolBar *toolbar = new ui::OnyxToolBar(this);
+    QAction *select = new QAction(QIcon(":/images/right_arrow.png"),
+                                "select", this);
+    connect(select, SIGNAL(triggered()), SLOT(accept()));
+    toolbar->addAction(select);
+    
     breadCrumbsLayout.setAlignment(Qt::AlignLeft);
+
     layout.setSpacing(0);
     layout.setContentsMargins(0, 0, 0, 0);
 
     layout.addLayout(&breadCrumbsLayout);
+    layout.addWidget(toolbar);
 
     treeView.showHeader(false);
     layout.addWidget(&treeView, 1);
@@ -164,6 +172,7 @@ void FileBrowser::updateTreeView()
     updateModel();
     treeView.setModel(&model);
     statusBar.setProgress(treeView.currentPage(), treeView.pages());
+    
     update();
     onyx::screen::instance().flush(this, onyx::screen::ScreenProxy::GC);
 }
@@ -255,7 +264,7 @@ void FileBrowser::onItemActivated(const QModelIndex &idx)
 
     if (currentRealPath.isEmpty() || QDir(currentRealPath).exists()) {
         updateTreeView();
-    } else if (QFile(currentRealPath).exists()) {
+    }else if (QFile(currentRealPath).exists()) {
         accept();
     } else {
         /* TODO error */
@@ -263,7 +272,6 @@ void FileBrowser::onItemActivated(const QModelIndex &idx)
         reject();
     }
 }
-
 void FileBrowser::onStatusBarClicked(const int percentage, const int page)
 {
     Q_UNUSED(percentage);
